@@ -1,0 +1,268 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Search Image</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="{% static 'css/simple-sidebar.css' %}" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://unpkg.com/gijgo@1.9.13/css/gijgo.min.css" rel="stylesheet" type="text/css" />
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.min.js' %}"></script>
+  <style>
+.bg-light,.btn{
+  background-color: #5B78DC !important;
+  border:#5B78DC ;
+  }
+  .bg-light2{
+    background-color: white !important;
+  }
+  .list-group-item{
+    border: none;
+  }
+  .active{
+    background-color: #5B78DC !important;
+
+  }
+  input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    /* display: none; <- Crashes Chrome on hover */
+    -webkit-appearance: none;
+    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+.carousel-inner img {
+    width: 100%;
+    height: 100%;
+  }
+input[type=number] {
+    -moz-appearance:textfield; /* Firefox */
+}
+input{
+  width: 30% ;
+}
+.gj-timepicker{
+  width: 50%;
+}
+.overflow{
+  overflow: hidden;
+}
+
+
+@media only screen and (max-width: 768px) {
+  .gj-timepicker{
+  width: 100%;
+}
+}
+#timepicker{
+  text-align: center;
+}
+.btn-outline-secondary{
+  background-color: #5B78DC !important;
+}
+.clock{
+  color:white
+}
+</style>
+</head>
+
+<body>
+
+  <div class="d-flex" id="wrapper">
+
+    <!-- Sidebar -->
+    <div class="bg-light2 border-right" id="sidebar-wrapper">
+      <div class="list-group list-group-flush">
+       <br><br><br>
+        <a href="/" class="list-group-item list-group-item-action bg-light2 ">AC-CC-8E-7A-4B-0D</a>
+<br>      
+  <a href="/camera2" class="list-group-item list-group-item-action bg-light2 active">AC-CC-8E-7A-4C-F5</a>
+
+      </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+
+      <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+
+        <button class="btn btn-primary" id="menu-toggle"><i class="fa fa-bars" style="font-size: 1.5rem;"></i>
+        </button>
+
+          <h5 style="color:white;margin-left:50px" >Thyssenkrupp Andernach - Neubau VA13 | AC-CC-8E-7A-4B-0D</h5>
+         
+      </nav>
+
+      <div class="container-fluid">
+        <br>
+        <form class="row text-center" action="." method="POST"  onsubmit="temp2()">
+          {% csrf_token %}
+          <div class="col-md-4"> 
+        <button  class="btn" type="button" style="background-color: transparent !important;" id="year_less"><i class="fa fa-arrow-left"></i></button>
+        <input type="number" class="text-center " style="border: none;" id="year" name="up_year" placeholder="YEAR" required>
+        <button  class="btn" type="button" style="background-color: transparent !important;" id="year_increase"><i class="fa fa-arrow-right"></i></button>
+      </div>
+      <div class="col-md-4">
+        <button  class="btn" type="button" style="background-color: transparent !important;" id="month_less"><i class="fa fa-arrow-left"></i></button>
+        <input type="number" class="text-center" style="border: none;" id="month" name="up_month" placeholder="MONTH" required>
+        <button  class="btn" type="button" style="background-color: transparent !important;" id="month_increase"><i class="fa fa-arrow-right"></i></button>
+      </div>
+        <div class="col-md-4">
+        <button  class="btn" type="button" style="background-color: transparent !important;" id="date_less"><i class="fa fa-arrow-left"></i></button>
+        <input type="number" class="text-center" style="border: none;" id="date" name="up_date" placeholder="DATE" required>
+        <button  class="btn" type="button" style="background-color: transparent !important;" id="date_increase"><i class="fa fa-arrow-right"></i></button>
+      </div>
+      <br>
+      <button class="btn" style="color:white;margin:auto;margin-top:20px"><i class="fa fa-search"></i> Search</button>
+     </form>
+
+      </div>
+      <br>
+{% if images %}
+      <div id="demo" class="carousel slide" style="width:80%;margin:0 auto;" data-ride="carousel">
+        <ul class="carousel-indicators">
+          {% for image in images %}
+          {% if forloop.first %}
+          <li data-target="#demo" data-slide-to="0" class="active" id="date2" data-name="{{image.down_date}}"></li>
+          {% else %}
+          <li data-target="#demo" data-slide-to="{{forloop.counter0}}"></li>
+           {% endif %}    
+          {% endfor %} 
+        </ul>
+        <div class="carousel-inner">
+          {% for image in images %}
+          {% if forloop.first %}
+          <div class="carousel-item active">
+            {% else %}
+          <div class="carousel-item">
+            {% endif %}
+            <img src="{{image.image_url}}" width="600" height="600">
+            <div class="carousel-caption">
+              <p>{{image.down_time}}</p>
+            </div>   
+          </div>
+          {% endfor %}
+       
+        </div>
+        <a class="carousel-control-prev" href="#demo" data-slide="prev">
+          <span class="carousel-control-prev-icon"></span>
+        </a>
+        <a class="carousel-control-next" href="#demo" data-slide="next">
+          <span class="carousel-control-next-icon"></span>
+        </a>
+      </div>
+     {% else %}
+     <h3 style="color:black" class="text-center">No Images Found on that Date.</h3>
+      {% endif %}
+
+    </div>
+    <!-- /#page-content-wrapper -->
+
+  </div>
+  <!-- /#wrapper -->
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.min.js' %}"></script>
+  <script src="https://unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
+
+  <!-- Menu Toggle Script -->
+
+<script>
+var temp;
+     if(document.getElementById("date2")){ 
+  temp = document.getElementById("date2").getAttribute("data-name")
+ temp = temp.split(" ");
+ }
+ else{
+ temp = localStorage.getItem("date").split(" ")
+ }
+ temp[1]=temp[1].replace(/\b0/g, '')
+ temp[0]=temp[0].replace(/\b0/g, '')
+ $("#year").val(temp[2])
+$("#month").val(temp[1])
+$("#date").val(temp[0])
+ 
+    var year_count = $("#year").val();
+    var month_count = $("#month").val();
+    var date_count = $("#date").val();
+    
+      $("#year_increase").click(function(){
+         year_count++;
+         $("#year").val(year_count)
+      })
+
+      $("#year_less").click(function(){
+        if(year_count==1){
+          return;
+        }
+         year_count--;
+         $("#year").val(year_count)
+      })
+
+      $("#month_increase").click(function(){
+        if(month_count==12){
+          return;
+        }
+        month_count++;
+         $("#month").val(month_count)
+      })
+
+      $("#month_less").click(function(){
+        if(month_count==1){
+          return;
+        }
+        
+        month_count--;
+         $("#month").val(month_count)
+      })
+
+      $("#date_increase").click(function(){
+        if(date_count==31){
+          return;
+        }
+        date_count++;
+         $("#date").val(date_count)
+      })
+
+      $("#date_less").click(function(){
+        if(date_count==1){
+          return;
+        }
+        date_count--;
+         $("#date").val(date_count)
+      })
+
+      $('#timepicker').timepicker({
+            uiLibrary: 'bootstrap4'
+        });
+
+    $("#menu-toggle").click(function(e) {
+      e.preventDefault();
+      if(screen.width <=768){
+        $("html").toggleClass("overflow")
+
+      }
+      $("#wrapper").toggleClass("toggled");
+    });
+function temp2(){
+  console.log("dads")
+  localStorage.setItem("date",$("#date").val()+" "+$("#month").val()+" "+ $("#year").val())
+}
+
+  </script>
+
+</body>
+
+</html>
