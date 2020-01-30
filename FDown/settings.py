@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'django_forms_bootstrap',
+
     'MainApp',
     'django_crontab',
 ]
@@ -133,3 +134,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media/')
 
 
 STATIC_URL = '/static/'
+
+LOGOUT_REDIRECT_URL = ''

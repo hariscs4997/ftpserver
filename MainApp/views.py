@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from ftplib import FTP
 import os
 from .models import Camera_One_Image, Camera_Two_Image, StateModel
@@ -6,7 +6,10 @@ import tempfile
 from django.core import files
 from datetime import datetime
 from dateutil import parser
-
+from django.contrib import auth, messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from .forms import UserLoginForm
 
 #Download functions
 def download_file(filename,camera_one = True):
@@ -166,7 +169,7 @@ def main_process():
 from django.http import HttpResponse
 # Create your views here.
 
-
+@login_required(login_url='/login')
 def handle_camera1(request):
     if request.method == 'POST':
         year = request.POST['up_year']
@@ -184,6 +187,7 @@ def handle_camera1(request):
     images = Camera_One_Image.objects.filter(down_date = query)
     return render(request,'camera1.html',{'images':images})
 
+@login_required(login_url='/login')
 def handle_camera2(request):
     if request.method == 'POST':
         year = request.POST['up_year']
@@ -201,3 +205,42 @@ def handle_camera2(request):
     query = now.strftime("%d %m %Y")
     images = Camera_Two_Image.objects.filter(down_date = query)
     return render(request,'camera2.html',{'images':images})
+
+@login_required(login_url='/login')
+def overview(request): 
+    return render(request,'overview.html')
+
+@login_required(login_url='/login')
+def impressum(request): 
+    return render(request,'impressum.html')
+# def login(request): 
+#     return render(request,'login.html')
+
+@login_required(login_url='/login')
+def logout(request):
+    #Log the user out
+    auth.logout(request)
+    messages.success(request, "You have successfuly been logged out")
+    return redirect(reverse('login'))
+
+def login(request):
+    # Return a login page
+    if request.user.is_authenticated:
+        return redirect(reverse('camera1'))
+    if request.method == "POST":
+        login_form = UserLoginForm(request.POST)
+        
+        if login_form.is_valid():
+            user = auth.authenticate(username=request.POST['username'],
+                                     password=request.POST['password'])
+            if user:
+                auth.login(user=user, request=request)
+                
+                messages.success(request, "You have successfuly logged in!")
+                return redirect(reverse('camera1'))
+                
+            else:
+                login_form.add_error(None, "Your username or password is incorrect")
+    else:
+        login_form = UserLoginForm()
+    return render(request, 'login.html', {"login_form": login_form})

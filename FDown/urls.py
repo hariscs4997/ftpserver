@@ -15,12 +15,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from MainApp.views import handle_camera1, handle_camera2
+from MainApp.views import handle_camera1, handle_camera2, overview, impressum, login, logout
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('',handle_camera1, name='camera1'),
     path('camera2/',handle_camera2,name='camera2'),
+    path('overview/',overview,name='overview'),
+    path('impressum/',impressum,name='impressum'),
+    path('login/',login,name='login'),
+    path('logout/',logout,name='logout'),
     path('admin/', admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
