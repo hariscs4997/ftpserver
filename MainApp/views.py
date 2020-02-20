@@ -10,9 +10,13 @@ from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .forms import UserLoginForm
+import pysftp
+
+
+
 
 #Download functions
-def download_file(filename,camera_one = True):
+def download_file(filename=None,camera_one = True,ydir=None,mdir=None,ddir=None,idir=None,time=None):
     #lf = tempfile.NamedTemporaryFile()
     #ftp.retrbinary("RETR " + filename, lf.write, 8*1024)
     if camera_one:
@@ -20,56 +24,119 @@ def download_file(filename,camera_one = True):
     else:
         c = Camera_Two_Image()
     c.name = filename
-    c_d = ftp.pwd().lstrip("/Kurpark/")
-    im_url = "https://archiv.dominikketz.de/" + c_d + "/" + filename
+    #c_d = ftp.pwd().lstrip("/Kurpark/")
+    if camera_one:
+        im_url = "https://archiv.dominikketz.de/ac-cc-8e-7a-4b-0d/archive/" + ydir + '/' + mdir + '/' + ddir + '/' + idir + '/' + filename
+    else:
+        im_url = "https://archiv.dominikketz.de/ac-cc-8e-7a-4c-f5/archive/" + ydir + '/' + mdir + '/' + ddir + '/' + idir + '/' + filename
     c.image_url = im_url
-    cmd_str = "MDTM " + filename
-    timestamp = ftp.voidcmd(cmd_str)[4:].strip()
-    time = parser.parse(timestamp)
-    n_time = time.strftime("%H:%M") 
-    n_date = time.strftime("%d %m %Y")
+    if int(ddir) < 10:
+        if not ddir.startswith('0'):
+            date_d = '0' + ddir
+        else:
+            date_d = ddir
+    else:
+        date_d = ddir
+    if int(mdir) < 10:
+        if not mdir.startswith('0'):
+            date_m = '0' + mdir
+        else:
+            date_m = mdir
+    else:
+        date_m = mdir
+    n_date = "{} {} {}".format(date_d,date_m,ydir)
+    n_time = time
+    print("Assigning time: ",n_time)
     c.down_time = n_time
     c.down_date = n_date
     c.save()
+    print('Saved')
     
 
 ext = ('.jpg','.png','.jpeg')
 
-ftp = FTP('home16953969.1and1-data.host','p6684723-timelapse','Wr7-k7z-Jox-DPy')
+cnopts = pysftp.CnOpts()
+cnopts.hostkeys = None
+
+sftp = pysftp.Connection(host='home16953969.1and1-data.host',username='p6684723-timelapse',password="DiesesLiedistwunderschön,aber?8",cnopts=cnopts)
+
+
+
 a1 = '/Kurpark/ac-cc-8e-7a-4b-0d/archive/'
 a2 = '/Kurpark/ac-cc-8e-7a-4c-f5/archive/'
 
 
+
 def start_operation(a,camera_one=True):
     state = StateModel.objects.latest('id')
-    year_dirs = ftp.nlst(a)[2:]
+    sftp.cwd(a)
+    year_dirs = sftp.listdir()
+#    year_dirs = ftp.nlst(a)[2:]
     for ydir in year_dirs:
+        if ydir.startswith('.'):
+            continue
         print("Year Dir:",ydir)
-        month_dirs = ftp.nlst(ydir)[2:]
+        np = a + '/' + ydir
+        sftp.cwd(np)
+        month_dirs = sftp.listdir()
+#        month_dirs = ftp.nlst(ydir)[2:]
         for mdir in month_dirs:
+            if mdir.startswith('.'):
+                continue
             print("Month Dir:",mdir)
-            day_dirs = ftp.nlst(mdir)[2:]
+            np = a + '/' + ydir + '/' + mdir
+            sftp.cwd(np)
+            day_dirs = sftp.listdir()
+#            day_dirs = ftp.nlst(mdir)[2:]
             for ddir in day_dirs:
+                if ddir.startswith('.'):
+                    continue
                 print("Day Dir:",ddir)
-                internal_dirs = ftp.nlst(ddir)[2:]
+                np = a + '/' + ydir + '/' + mdir + '/' + ddir
+                sftp.cwd(np)
+                internal_dirs = sftp.listdir()
+#                internal_dirs = ftp.nlst(ddir)[2:]
                 for idir in internal_dirs:
+                    if idir.startswith('.'):
+                        continue
                     print("Internal Dir:",idir)
-                    ftp.cwd(idir)
-                    listing = []
-                    ftp.retrlines('LIST',listing.append)
-                    for list in listing:
-                        words = list.split(None,8)
-                        filename = words[-1].lstrip()
-                        if filename.endswith(ext):
-                            if camera_one == True:
-                                print("Downloading: ",filename)
-                                download_file(filename)
-                                state.camera_one = filename
-                            else:
-                                print("Downloading: ",filename)
-                                download_file(filename,camera_one=False)
-                                state.camera_two = filename
-                            state.save()
+                    np = a + '/' + ydir + '/' + mdir + '/' + ddir + '/' + idir
+                    sftp.cwd(np)
+                    list_files = sftp.listdir()
+                    for file in list_files:
+                        if file.startswith('.'):
+                            continue
+                        print(file)
+                        t1 = str(sftp.lstat(file))
+                        t2 = t1.split(' ')
+                        time = t2[-2]
+                        if camera_one == True:
+                            print("Saving: ",file)
+                            download_file(filename=file,ydir=ydir,mdir=mdir,ddir=ddir,idir=idir,time=time)
+                            state.camera_one = file
+                        else:
+                            print("Saving: ",file)
+                            download_file(filename=file,camera_one=False,ydir=ydir,mdir=mdir,ddir=ddir,idir=idir,time=time)
+                            state.camera_two = file
+                        state.save()
+
+
+#                    ftp.cwd(idir)
+                    # listing = []
+                    # ftp.retrlines('LIST',listing.append)
+                    # for list in listing:
+                    #     words = list.split(None,8)
+                    #     filename = words[-1].lstrip()
+                    #     if filename.endswith(ext):
+                    #         if camera_one == True:
+                    #             print("Downloading: ",filename)
+                    #             download_file(filename)
+                    #             state.camera_one = filename
+                    #         else:
+                    #             print("Downloading: ",filename)
+                    #             download_file(filename,camera_one=False)
+                    #             state.camera_two = filename
+                    #         state.save()
     print("Completed")
     # print("Year Dirs Later: ",year_dirs_later)
     # print("Month Dirs Later:", month_dirs_later)
@@ -81,53 +148,80 @@ def start_operation(a,camera_one=True):
 
 def regular_operation(a,fn,camera_one=True):
     state = StateModel.objects.latest('id')
-    year_dirs = ftp.nlst(a)[2:]
+    sftp.cwd(a)
+    year_dirs = sftp.listdir()
+    #year_dirs = ftp.nlst(a)[2:]
     year_dirs.reverse()
     #use this counter to end the state saving process after executing one time
     cntr = 0
     for ydir in year_dirs:
+        if ydir.startswith('.'):
+            continue
         print("Reverse Year Dir:", ydir)
-        month_dirs = ftp.nlst(ydir)[2:]
+        np = a + '/' + ydir
+        sftp.cwd(np)
+        month_dirs = sftp.listdir()
+        #month_dirs = ftp.nlst(ydir)[2:]
         month_dirs.reverse()
         for mdir in month_dirs:
+            if mdir.startswith('.'):
+                continue
             print("Reverse Month Dir:", mdir) 
-            day_dirs = ftp.nlst(mdir)[2:]
+            np = a + '/' + ydir + '/' + mdir
+            sftp.cwd(np)
+            day_dirs = sftp.listdir()
+#            day_dirs = ftp.nlst(mdir)[2:]
             day_dirs.reverse()
             for ddir in day_dirs:
+                if ddir.startswith('.'):
+                    continue
+                
                 print("Reverse Day Dir:", ddir)
-                internal_dirs = ftp.nlst(ddir)[2:]
+                np = a + '/' + ydir + '/' + mdir + '/' + ddir
+                sftp.cwd(np)
+                internal_dirs = sftp.listdir()
+#                internal_dirs = ftp.nlst(ddir)[2:]
                 internal_dirs.reverse()
                 for idir in internal_dirs:
+                    if idir.startswith('.'):
+                        continue
                     print("Reverse Internal Dir:",idir)
-                    ftp.cwd(idir)
-                    listing = []
-                    ftp.retrlines('LIST',listing.append)
-                    listing.reverse()
-                    for list in listing:
-                        words = list.split(None,8)
-                        filename = words[-1].lstrip()
-                        if filename.endswith(ext):
-                            if filename == fn:
-                                print("File already exists")
-                                return "Out"
+                    np = a + '/' + ydir + '/' + mdir + '/' + ddir + '/' + idir
+                    sftp.cwd(np)
+#                    ftp.cwd(idir)
+                    list_files = sftp.listdir()
+                    list_files.reverse()
+                    for file in list_files:
+                        if file.startswith('.'):
+                            continue
+                        if file == fn:
+                            print("File already exists")
+                            return "Out"
+                        else:
+                            t1 = str(sftp.lstat(file))
+                            t2 = t1.split(' ')
+                            time = t2[-2]
+                            if camera_one:
+                                print("Saving: ",file)
+                                download_file(filename=file,ydir=ydir,mdir=mdir,ddir=ddir,idir=idir,time=time)
+                                if cntr ==0:
+                                    state.camera_one = file
+                                    cntr +=1
+                                    state.save()
                             else:
-                                if camera_one:
-                                    print("Downloading: ",filename)
-                                    download_file(filename)
-                                    if cntr ==0:
-                                        state.camera_one = filename
-                                        cntr +=1
-                                        state.save()
-                                else:
-                                    print("Downloading: ",filename)
-                                    download_file(filename,camera_one=False)
-                                    if cntr ==0:
-                                        state.camera_two = filename
-                                        cntr +=1
-                                        state.save()
+                                print("Saving: ",file)
+                                download_file(filename=file,camera_one=False,ydir=ydir,mdir=mdir,ddir=ddir,idir=idir,time=time)
+                                if cntr ==0:
+                                    state.camera_two = file
+                                    cntr +=1
+                                    state.save()
                                 
                             #infile.write(filename + '\n')
     print("Reverse Complete")
+
+
+
+
 
 def camera_two_get():
     s = StateModel.objects.latest('id')
@@ -237,7 +331,7 @@ def login(request):
                 auth.login(user=user, request=request)
                 
                 messages.success(request, "You have successfuly logged in!")
-                return redirect(reverse('camera1'))
+                return redirect(reverse('overview'))
                 
             else:
                 login_form.add_error(None, "Your username or password is incorrect")
