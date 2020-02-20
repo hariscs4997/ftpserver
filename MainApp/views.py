@@ -274,11 +274,13 @@ def handle_camera1(request):
         if int(month) < 10:
             month = '0' + month
         search_filter = '{} {} {}'.format(date,month,year)
-        images = Camera_One_Image.objects.filter(down_date = search_filter)
+        images_f = Camera_One_Image.objects.filter(down_date = search_filter)
+        images = images_f.order_by('-down_time')
         return render(request,'camera1.html',{'images':images})
     now = datetime.now()
     query = now.strftime("%d %m %Y")
-    images = Camera_One_Image.objects.filter(down_date = query)
+    images_f = Camera_One_Image.objects.filter(down_date = query)
+    images = images_f.order_by('-down_time')
     return render(request,'camera1.html',{'images':images})
 
 @login_required(login_url='/login')
@@ -292,12 +294,14 @@ def handle_camera2(request):
         if int(month) < 10:
             month = '0' + month
         search_filter = '{} {} {}'.format(date,month,year)
-        images = Camera_Two_Image.objects.filter(down_date = search_filter)
+        images_f = Camera_Two_Image.objects.filter(down_date = search_filter)
+        images = images_f.order_by('-down_time')
         return render(request,'camera2.html',{'images':images})
     
     now = datetime.now() 
     query = now.strftime("%d %m %Y")
-    images = Camera_Two_Image.objects.filter(down_date = query)
+    images_f = Camera_Two_Image.objects.filter(down_date = query)
+    images = images_f.order_by('-down_time')
     return render(request,'camera2.html',{'images':images})
 
 @login_required(login_url='/login')
@@ -320,7 +324,7 @@ def logout(request):
 def login(request):
     # Return a login page
     if request.user.is_authenticated:
-        return redirect(reverse('camera1'))
+        return redirect(reverse('overview'))
     if request.method == "POST":
         login_form = UserLoginForm(request.POST)
         
